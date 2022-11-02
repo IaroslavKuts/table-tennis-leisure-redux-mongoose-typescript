@@ -2,7 +2,6 @@ const jwt = require("jsonwebtoken");
 
 //Function that verifies jwtToken
 const verifyJWT = (request, response, next) => {
-  let csrfToken = request.get("x-xsrf-token");
   let jwtRefreshToken = request.cookies["jwtRefreshToken"];
   if (!jwtRefreshToken) {
     const error = new Error("Middleware. jwtToken is undefined");

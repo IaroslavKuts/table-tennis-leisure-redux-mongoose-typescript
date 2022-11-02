@@ -30,6 +30,7 @@ const readAlteredBlockedDates = async (request, response) => {
 const deleteAlteredWorkSchedule = async (request, response) => {
   const { date } = request.body;
   await altered_work_schedule.destroy({ where: { date } });
+  response.json({ message: "Success" });
 };
 
 const alteredWorkScheduleController = {

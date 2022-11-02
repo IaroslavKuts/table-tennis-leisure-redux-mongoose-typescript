@@ -79,13 +79,13 @@ const readProfit = async (request, response) => {
     end_date = new Date().toLocaleDateString(),
     start_payment = 0,
     end_payment = Math.pow(2, 31) - 1,
-  } = request.body;
-  console.log(start_date, end_date);
+  } = request.query;
+  console.log(start_date, end_date, 111111111111111);
 
-  [start_date, end_date] = auxillary_functions.restSQLDateFormater(
-    start_date,
-    end_date
-  );
+  // [start_date, end_date] = auxillary_functions.restSQLDateFormater(
+  //   start_date,
+  //   end_date
+  // );
   console.log(start_date, end_date);
   await orders
     .findAll({
@@ -114,12 +114,12 @@ const readDaysLoad = async (request, response) => {
       new Date().setDate(new Date().getDate() - 30)
     ).toLocaleDateString(),
     end_date = new Date().toLocaleDateString(),
-  } = request.body;
+  } = request.query;
 
-  [start_date, end_date] = auxillary_functions.restSQLDateFormater(
-    start_date,
-    end_date
-  );
+  // [start_date, end_date] = auxillary_functions.restSQLDateFormater(
+  //   start_date,
+  //   end_date
+  // );
 
   await orders
     .findAll({
@@ -148,12 +148,12 @@ const readUsersDataByPayment = async (request, response) => {
     end_date = new Date().toLocaleDateString(),
     start_payment = 0,
     end_payment = Math.pow(2, 32) - 1,
-  } = request.body;
+  } = request.query;
 
-  [start_date, end_date] = auxillary_functions.restSQLDateFormater(
-    start_date,
-    end_date
-  );
+  // [start_date, end_date] = auxillary_functions.restSQLDateFormater(
+  //   start_date,
+  //   end_date
+  // );
 
   await orders
     .findAll({
@@ -177,7 +177,8 @@ const readUsersDataByPayment = async (request, response) => {
 };
 
 const readUserOrdersByPassport = async (request, response) => {
-  const { passport = "%" } = request.body;
+  const { passport = "%" } = request.query;
+  console.log(passport, 11111111111);
   await orders
     .findAll({
       attributes: ["date_of_game", "start_time", "end_time", "payment"],
@@ -281,14 +282,14 @@ const createCertainDateSchedule = async (request, response) => {
       }
 
       services.sendVouchers(createCertainDateSchedule);
-      response.json(createCertainDateSchedule);
       // orders.destroy({
       //   where: {
-      //     order_id: updateCertainDayScheduleAndSendVouchers.map(
+      //     order_id: createCertainDateSchedule.map(
       //       ({ orders }) => orders.order_id
       //     ),
       //   },
       // });
+      response.json(createCertainDateSchedule);
     });
 };
 

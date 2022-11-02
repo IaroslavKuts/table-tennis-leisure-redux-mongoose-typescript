@@ -12,22 +12,22 @@ const adminRoutes = (router) => {
     process.env.REACT_APP_READ_CUSTOMERS_AGES,
     controllers.readCustomersAges
   );
-  router.post(
+  router.get(
     process.env.REACT_APP_READ_PROFIT,
     csrfDefence,
     controllers.readProfit
   );
-  router.post(
+  router.get(
     process.env.REACT_APP_READ_DAYS_LOAD,
     csrfDefence,
     controllers.readDaysLoad
   );
-  router.post(
+  router.get(
     process.env.REACT_APP_READ_USERS_DATA_BY_PAYMENT,
     csrfDefence,
     controllers.readUsersDataByPayment
   );
-  router.post(
+  router.get(
     process.env.REACT_APP_READ_USER_ORDERS_BY_PASSPORT,
     csrfDefence,
     controllers.readUserOrdersByPassport

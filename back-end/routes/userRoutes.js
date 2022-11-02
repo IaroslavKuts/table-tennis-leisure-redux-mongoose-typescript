@@ -10,6 +10,11 @@ const userRoutes = (router) => {
     csrfDefence,
     controllers.updateUserTheme
   );
+  router.post(
+    process.env.REACT_APP_UPDATE_USER_DATA,
+    csrfDefence,
+    controllers.updateUserData
+  );
 };
 
 module.exports = userRoutes;

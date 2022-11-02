@@ -23,7 +23,6 @@ const cors = require("cors");
 const app = express();
 const csrfDefence = csrf({ cookie: { httpOnly: true } });
 
-const router = express.Router();
 app.use(express.json());
 app.use(cookieParser());
 
@@ -36,6 +35,7 @@ const corsOptions = {
       callback(new Error("Not allowed by CORS"));
     }
   },
+  credentials: true,
   optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));

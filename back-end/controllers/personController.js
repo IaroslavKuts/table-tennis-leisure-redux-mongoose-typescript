@@ -8,13 +8,6 @@ const readPerson = async (request, response) => {
 
   let receivedPerson = await persons.findOne({
     where: { user_id },
-    attributes: [
-      "first_name",
-      "surname",
-      "date_of_birth",
-      "gender",
-      "passport",
-    ],
   });
   if (!receivedPerson)
     return response
@@ -31,23 +24,11 @@ const updatePerson = async (request, response) => {
     { first_name, surname, date_of_birth, gender, passport },
     { where: { user_id } }
   );
-  // .then((obtainedPerson) => {
-  //   if (!obtainedPerson) {
-  //     return response.status(403).send("!user Read");
-  //   }
-  //   response.json(obtainedPerson);
-  // });
+  response.json({ message: "Success" });
 };
 
 const createPerson = async (personData) => {
-  const { passport, first_name, surname, date_of_birth, gender } = personData;
-  await persons.create({
-    passport,
-    first_name,
-    surname,
-    date_of_birth,
-    gender,
-  });
+  await persons.create(personData);
   // .then((obtainedUser) => {
   //   if (!obtainedUser) {
   //     return response.status(403).send("!user Read");

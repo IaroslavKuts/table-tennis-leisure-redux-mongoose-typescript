@@ -22,7 +22,7 @@ const readWorkSchedule = async (day_id) => {
 };
 const readAllWorkSchedules = async (request, response) => {
   let receivedAllWorkSchedules = await basic_work_schedule.findAll({
-    attributes: ["open", "close"],
+    attributes: ["open", "close", "day_id"],
   });
   if (!receivedAllWorkSchedules)
     return response.status(404).send({ msg: "Work schedules were not found" });

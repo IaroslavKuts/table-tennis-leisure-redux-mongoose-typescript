@@ -19,6 +19,7 @@ const paypalClient = new paypal.core.PayPalHttpClient(
 
 const processPayPalOrder = async (request, response) => {
   const { chosenTimePeriods } = request.body;
+  console.log(chosenTimePeriods);
   const chosenTimePeriodsFullInfo = await time_periods.findAll({
     raw: true,
     where: { time_period_id: { [Op.in]: chosenTimePeriods } },
@@ -63,7 +64,7 @@ const processPayPalOrder = async (request, response) => {
   try {
     const order = await paypalClient.execute(result);
     console.log(order);
-    // response.json({ id: order.result.id });
+    response.json({ id: order.result.id });
   } catch (e) {
     response.status(500).json({ error: e.message, sent: "sent" });
   }

@@ -4,9 +4,8 @@ const csrfDefence = csrf({ cookie: { httpOnly: true } });
 
 //End-points for functions declared in miscellaneousController.js
 const miscellaneousRoutes = (router) => {
-  router.post(
-    process.env.REACT_APP_READ_FILTERED_TIME_PERIODS,
-    csrfDefence,
+  router.get(
+    `${process.env.REACT_APP_READ_FILTERED_TIME_PERIODS}`,
     controllers.readFilteredTimePeriods
   );
   router.get(

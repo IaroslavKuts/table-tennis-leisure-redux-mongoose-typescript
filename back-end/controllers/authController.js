@@ -30,19 +30,19 @@ const handleLogIn = async (request, response) => {
     receivedUser = receivedUser.toJSON();
   }
 
-  let passwordsAreSame = await bcrypt.compare(password, receivedUser.password);
-  if (!passwordsAreSame)
-    return response
-      .status(401)
-      .json({ error: { message: "Password is incorrect" } });
+  // let passwordsAreSame = await bcrypt.compare(password, receivedUser.password);
+  // if (!passwordsAreSame)
+  //   return response
+  //     .status(401)
+  //     .json({ error: { message: "Password is incorrect" } });
 
-  const { authorities, user_id, theme } = receivedUser;
+  const { authorities, user_id } = receivedUser;
   const csrfToken = request.get("x-xsrf-token");
   const accessToken = jwt.sign(
     { user_id, authorities, email },
     process.env.JWT_TOKEN,
     {
-      expiresIn: "1min",
+      expiresIn: "10s",
     }
   );
 
@@ -55,24 +55,22 @@ const handleLogIn = async (request, response) => {
   );
 
   users.update({ refreshToken }, { where: { user_id } });
-  response
-    .cookie("jwtRefreshToken", refreshToken, {
-      maxAge: 24 * 60 * 60 * 1000,
-      httpOnly: true,
-      //secure: true,
-      //sameSite: "None";
-    })
+  response.cookie("jwtRefreshToken", refreshToken, {
+    maxAge: 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    //secure: true,
+    //sameSite: "None";
+  });
 
-    .json({ accessToken, authorities, theme });
+  response.json({ accessToken, authorities });
 };
 
 const handleRefreshToken = async (request, response) => {
-  const csrfToken = request.get("x-xsrf-token");
   const jwtRefreshToken = request.cookies["jwtRefreshToken"];
-  if (!jwtRefreshToken)
-    return response.status(401).json({
-      error: { message: "Refresh end-point. jwtRefreshToken is undefined" },
-    });
+  // if (!jwtRefreshToken)
+  //   return response.status(401).json({
+  //     error: { message: "Refresh end-point. jwtRefreshToken is undefined" },
+  //   });
 
   let receivedUser = await users.findOne({
     where: { refreshToken: jwtRefreshToken },
@@ -87,19 +85,42 @@ const handleRefreshToken = async (request, response) => {
     receivedUser = receivedUser.toJSON();
   }
 
-  const { user_id, email, authorities, theme } = receivedUser;
-  jwt.verify(jwtRefreshToken, process.env.JWT_TOKEN, (err, decoded) => {
-    if (err || user_id !== decoded.user_id)
+  const { user_id, email, authorities } = receivedUser;
+  jwt.verify(jwtRefreshToken, process.env.JWT_TOKEN, async (err, decoded) => {
+    if (err)
+      return response.status(403).json({
+        error: err,
+      });
+    if (user_id !== decoded.user_id)
       return response.status(403).json({
         error: { message: "Decoded user_id is not equal to user_id from DB" },
       });
 
     const accessToken = jwt.sign(
-      { authorities, sub: csrfToken, email },
+      { user_id, authorities, email },
       process.env.JWT_TOKEN,
-      { expiresIn: "1m" }
+      {
+        expiresIn: "10s",
+      }
     );
-    response.json({ accessToken, authorities, theme });
+
+    const refreshToken = jwt.sign(
+      { authorities, user_id, email },
+      process.env.JWT_TOKEN,
+      {
+        expiresIn: "1d",
+      }
+    );
+
+    users.update({ refreshToken }, { where: { user_id } });
+    response.cookie("jwtRefreshToken", refreshToken, {
+      maxAge: 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      //secure: true,
+      //sameSite: "None";
+    });
+
+    response.json({ accessToken, authorities });
   });
 };
 

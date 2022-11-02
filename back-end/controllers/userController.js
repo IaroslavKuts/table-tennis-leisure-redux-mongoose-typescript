@@ -1,5 +1,6 @@
 const DBManager = require("../sequelize");
 const { users, abonements, orders, persons } = DBManager.models;
+const { createPerson } = require("./personController");
 
 // CRUD functions for table `user`
 
@@ -8,7 +9,7 @@ const readUser = async (request, response) => {
 
   let receivedUser = await users.findOne({
     where: { user_id },
-    attributes: ["user_id", "email"],
+    attributes: ["user_id", "email", "authorities", "abonement", "theme"],
     include: [
       // {
       //   model: persons,
@@ -50,7 +51,7 @@ const createUser = async (request, response) => {
     { raw: true }
   );
   const { user_id } = createdUser;
-  await persons.create({
+  createPerson({
     user_id,
     first_name,
     surname,
@@ -89,5 +90,17 @@ const updateUserTheme = async (request, response) => {
   // });
 };
 
-const userController = { readUser, createUser, updateUserTheme };
+const updateUserData = async (request, response) => {
+  const user_id = request.user_id;
+  console.log(request.body);
+  // update ignores user_id that is in body
+  await users.update({ ...request.body }, { where: { user_id } });
+  response.json({ message: "Success" });
+};
+const userController = {
+  readUser,
+  createUser,
+  updateUserTheme,
+  updateUserData,
+};
 module.exports = userController;

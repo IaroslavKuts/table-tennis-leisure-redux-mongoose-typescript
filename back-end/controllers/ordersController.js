@@ -9,7 +9,7 @@ const readOrders = async (request, response) => {
   let receivedOrders = await orders.findAll({
     where: { user_id },
 
-    attributes: { exclude: ["user_id,payment_status"] },
+    attributes: { exclude: ["user_id", "payment_status"] },
   });
   if (!receivedOrders)
     return response.status(404).send({ msg: "Orders  were not found" });
@@ -44,7 +44,8 @@ const createOrder = async (request, response) => {
 
 const deleteOrder = async (request, response) => {
   const { order_id } = request.body;
-  orders.destroy({ where: { order_id } });
+  await orders.destroy({ where: { order_id } });
+  response.json({ message: "Success" });
 };
 
 const ordersController = {
