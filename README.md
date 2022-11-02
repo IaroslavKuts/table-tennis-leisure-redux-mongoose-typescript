@@ -2,8 +2,8 @@
 Diploma project for National School for Practical Engineers at the Technion /  פרויקט גמר הנדסאים טכניון
 
 Full stack project. 
-Front-end programming languages: HTML, CSS, JavaScript.
-Front-end programming frameworks: ReactJS,Syncfusion,Tailwind. 
+Front-end programming languages: HTML5, CSS3, JavaScript.
+Front-end programming frameworks: ReactJS, Redux, Syncfusion,Tailwind. 
 Back-end programming frameworks: NodeJS, Express. 
 NodeJS modules: nodemaller, jwtwebtoken, bcrypt, sequelize. 
-Database: MySQL .
+Database: MariaDB
