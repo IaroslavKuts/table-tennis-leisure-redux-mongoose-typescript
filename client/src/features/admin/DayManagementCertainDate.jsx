@@ -7,7 +7,8 @@ import {
   useAddBlockedDateMutation,
   useDeleteBlockedDateMutation,
   useGetBlockedDatesQuery,
-  useGetFilteredTimePeriodsQuery,
+  useGetTimePeriodsQuery,
+  useGetUnavailableTimePeriodsQuery,
 } from "../calendarApiSlice";
 
 const DayManagementCertainDate = () => {
@@ -16,7 +17,15 @@ const DayManagementCertainDate = () => {
   const [deleteBlockedDate] = useDeleteBlockedDateMutation();
   const [addBlockedDate] = useAddBlockedDateMutation();
   const { data, isSuccess, isError, error, refetch } =
-    useGetFilteredTimePeriodsQuery(dateOfGame);
+    useGetTimePeriodsQuery(dateOfGame);
+  const {
+    data: unavailableTimePeriodsData,
+    isSuccess: isSuccessUnavailableTimePeriods,
+    isError: isErrorUnavailableTimePeriods,
+    error: errorUnavailableTimePeriods,
+  } = useGetUnavailableTimePeriodsQuery(dateOfGame, {
+    skip: !dateOfGame,
+  });
   const {
     data: blockedDates = [],
     isSuccess: isSuccessBlockedDates,
@@ -24,6 +33,17 @@ const DayManagementCertainDate = () => {
     error: errorBlockedDates,
   } = useGetBlockedDatesQuery();
 
+  const handleTimePeriodBackGroundColor = (start_Time) => {
+    const { unavailableTimePeriods } = unavailableTimePeriodsData;
+    if (
+      unavailableTimePeriods.findIndex(
+        ({ start_time, amount }) => start_time === start_Time && amount === 5
+      ) !== -1
+    )
+      return "Grey";
+
+    return currentColor;
+  };
   const handleBlockUnBlock = async () => {
     try {
       if (isDayBlocked() && blockedDates.length > 0) {
@@ -62,16 +82,22 @@ const DayManagementCertainDate = () => {
               <h2>Tables</h2>
               <h2>Time periods</h2>
             </div>
-            {isError && <p>{error}</p>}
+            {isError && <p>{error.message}</p>}
             {isSuccess &&
-              data.map(({ start_time, end_time, c }) => {
+              isSuccessUnavailableTimePeriods &&
+              data.map(({ start_time, end_time }) => {
                 return (
                   <div key={uuid()} className="flex flex-row">
-                    <p className="w-full p-1 mt-0.5">{c ? c : 0} </p>
+                    <p className="w-full p-1 mt-0.5">
+                      {unavailableTimePeriodsData.unavailableTimePeriods.find(
+                        (el) => el.start_time === start_time
+                      )?.amount || 0}
+                    </p>
                     <button
                       className="w-full p-1 bg-slate-700 hover:bg-slate-500 text-gray-100 mt-0.5"
                       style={{
-                        backgroundColor: c === 5 ? "Grey" : currentColor,
+                        backgroundColor:
+                          handleTimePeriodBackGroundColor(start_time),
                       }}
                     >
                       {`${start_time}-${end_time}`}

@@ -3,23 +3,25 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
 import { useSelector } from "react-redux";
-import { selectPerson, useUpdatePersonMutation } from "./personSlice";
+import { useUpdatePersonMutation } from "./personSlice";
 import { selectUser } from "./userSlice";
-import { selectAbonementById } from "./abonementSlice";
 import { selectCurrentColor } from "../appSettingsSlice";
 
 //Component that gives to an user an option to browse its personal data
 //User can update its personal data
 const PersonalData = () => {
   const user = useSelector(selectUser)[0];
-  const person = useSelector(selectPerson)[0];
   const [updatePerson] = useUpdatePersonMutation();
   const currentColor = useSelector(selectCurrentColor);
-  const { first_name, surname, passport, date_of_birth } = person;
-  const { email, password, abonement, user_id } = user;
-  const { name_of_abonement, price, description } = useSelector((state) =>
-    selectAbonementById(state, abonement)
-  );
+  const {
+    first_name,
+    surname,
+    passport,
+    date_of_birth,
+    _id: personID,
+  } = user.person;
+  const { email, _id } = user;
+  const { name_of_abonement, price, description } = user.abonement;
 
   const [isDisabled, setIsDisabled] = useState(true);
   let navigate = useNavigate();
@@ -31,6 +33,7 @@ const PersonalData = () => {
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -38,16 +41,26 @@ const PersonalData = () => {
       surname,
       passport,
       email,
-      password,
-      confirmPassword: "",
       date_of_birth,
     },
   });
+
+  const filterFields = (data) => {
+    const original = { first_name, surname, passport, date_of_birth, email };
+    const result = Object.entries(data).filter(
+      ([key, value]) => original[key] !== value
+    );
+    return Object.fromEntries(result);
+  };
   const onSubmit = async (data) => {
     try {
-      await updatePerson({ ...data, id: user_id }).unwrap();
+      data = filterFields(data);
+      console.log(data);
+      await updatePerson({ ...data, personID, id: _id }).unwrap();
     } catch (err) {
-      console.log(err);
+      setError(err.data.field, {
+        message: err.data.message,
+      });
     }
   };
 
@@ -127,7 +140,7 @@ const PersonalData = () => {
                   />
                   {errors.email?.message}
                 </div>
-                <div className="flex flex-col py-2">
+                {/* <div className="flex flex-col py-2">
                   <label className="uppercase text-sm py-2">Password</label>
                   <input
                     className="border-2 rounded-lg p-3 flex border-gray-300"
@@ -148,7 +161,7 @@ const PersonalData = () => {
                     disabled={isDisabled}
                     {...register("confirmPassword")}
                   />
-                </div>
+                </div> */}
                 <div className="flex flex-col py-2">
                   <label className="uppercase text-sm py-2">
                     Date of birth

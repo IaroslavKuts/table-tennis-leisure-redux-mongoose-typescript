@@ -17,7 +17,6 @@ import { selectUser } from "./user/userSlice";
 import {
   useGetBasicDaysSchedulesQuery,
   useGetBlockedDatesQuery,
-  useGetBlockedDaysQuery,
   useGetUnavailableTimePeriodsQuery,
 } from "./calendarApiSlice";
 import { setDateOfGame } from "./appSettingsSlice";
@@ -42,13 +41,7 @@ const Calendar = (props) => {
     isError: isErrorBlockedDates,
     error: errorBlockedDates,
   } = useGetBlockedDatesQuery();
-  // const {
-  //   data: blockedDays,
-  //   isLoading: isLoadingBlockedDays,
-  //   isSuccess: isSuccessBlockedDays,
-  //   isError: isErrorBlockedDays,
-  //   error: errorBlockedDays,
-  // } = useGetBlockedDaysQuery();
+
   const {
     data: basicDaysSchedule,
     isLoading: isLoadingBasicDaysSchedule,
@@ -69,7 +62,8 @@ const Calendar = (props) => {
     return <OrderTimeChoice dateOfGame={dateOfGame} />;
   };
   const onPopupOpen = (args) => {
-    if (authorities === 2) {
+    console.log(args);
+    if (authorities === "admin") {
       args.scheduleObj.cancel = true;
       let day = args.scheduleObj.data.StartTime.getDate();
       day = day < 10 ? `0${day}` : day;
@@ -97,7 +91,7 @@ const Calendar = (props) => {
   };
 
   const onRenderCell = (args) => {
-    authorities === 1 &&
+    authorities === "user" &&
       args.scheduleObj.date < new Date() &&
       args.scheduleObj.element.classList.add("e-disableCell");
 
@@ -123,44 +117,37 @@ const Calendar = (props) => {
       {(isLoadingBlockedDates ||
         isLoadingBasicDaysSchedule ||
         isLoadingTimePeriods) && <p>Loading</p>}
-      {(isErrorBlockedDates ||
-        isErrorBasicDaysSchedule ||
-        isErrorTimePeriods) && <p>{"Error"}</p>}
-      {isSuccessTimePeriods &&
-        isSuccessBlockedDates &&
-        isSuccessBasicDaysSchedule && (
-          <ScheduleComponent
-            editorTemplate={(args) => editorTemplate(args)}
-            renderCell={(scheduleObj) => onRenderCell({ scheduleObj })}
-            popupOpen={(scheduleObj) => onPopupOpen({ scheduleObj })}
-            showQuickInfo={false}
-            height="650px"
-            eventSettings={{
-              dataSource: unavailableTimePeriods.map(
-                ({ start_time_data_array, end_time_data_array }) => ({
-                  StartTime: new Date(...start_time_data_array),
-                  EndTime: new Date(...end_time_data_array),
-                })
-              ),
-            }}
-          >
-            {/*to see custom view of calendar in header of calendar */}
-            <ViewsDirective>
-              {/*first option as default have week view too*/}
-              {/*show week number in left of cal*/}
-              <ViewDirective
-                option="Month"
-                showWeekNumber={true}
-              ></ViewDirective>
-              <ViewDirective
-                option="Day"
-                startHour="9:00"
-                endHour="21:00"
-              ></ViewDirective>
-            </ViewsDirective>
-            <Inject services={[Day, Week, Month, Resize]} />
-          </ScheduleComponent>
-        )}
+      {(isErrorBlockedDates || isErrorBasicDaysSchedule) && <p>{"Error"}</p>}
+      {isSuccessBlockedDates && isSuccessBasicDaysSchedule && (
+        <ScheduleComponent
+          editorTemplate={(args) => editorTemplate(args)}
+          renderCell={(scheduleObj) => onRenderCell({ scheduleObj })}
+          popupOpen={(scheduleObj) => onPopupOpen({ scheduleObj })}
+          showQuickInfo={false}
+          height="650px"
+          // eventSettings={{
+          //   dataSource: unavailableTimePeriods.map(
+          //     ({ start_time_data_array, end_time_data_array }) => ({
+          //       StartTime: new Date(...start_time_data_array),
+          //       EndTime: new Date(...end_time_data_array),
+          //     })
+          //   ),
+          // }}
+        >
+          {/*to see custom view of calendar in header of calendar */}
+          <ViewsDirective>
+            {/*first option as default have week view too*/}
+            {/*show week number in left of cal*/}
+            <ViewDirective option="Month" showWeekNumber={true}></ViewDirective>
+            <ViewDirective
+              option="Day"
+              startHour="9:00"
+              endHour="21:00"
+            ></ViewDirective>
+          </ViewsDirective>
+          <Inject services={[Day, Week, Month, Resize]} />
+        </ScheduleComponent>
+      )}
     </div>
   );
 };

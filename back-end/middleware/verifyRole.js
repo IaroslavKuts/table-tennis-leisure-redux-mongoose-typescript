@@ -1,9 +1,7 @@
-const DBManager = require("../sequelize");
-
 const isAdmin = (request, response, next) => {
   const { authorities } = request;
   console.log(`Authorities in isAdmin Function${authorities}`);
-  if (authorities !== 2) {
+  if (authorities !== "admin") {
     const error = new Error(
       "Permission declined. This user does not admin rights"
     );

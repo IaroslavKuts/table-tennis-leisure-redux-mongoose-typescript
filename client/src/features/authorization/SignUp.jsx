@@ -1,14 +1,16 @@
 import React from "react";
 import { useForm } from "react-hook-form";
-// import { corsMaker } from "../data/dummy";
-import LogIni from "../../data/LogIni.jpg";
 
+import LogIni from "../../data/LogIni.jpg";
+import { useSignUpMutation } from "./authorizationApiSlice";
 //Component that gives an option to registrate regular user
 const SignUp = () => {
   //form hook
+  const [signUp] = useSignUpMutation();
   const {
     register,
     setValue,
+    setError,
     handleSubmit,
     formState: { errors },
   } = useForm({
@@ -25,15 +27,15 @@ const SignUp = () => {
   });
 
   const checkPassword = () => {};
-  const onSubmit = (data) => {
-    console.log(data);
-    // fetch(
-    //   process.env.REACT_APP_CREATE_USER,
-    //   corsMaker({
-    //     method: "POST",
-    //     body: data,
-    //   })
-    // );
+  const onSubmit = async (data) => {
+    try {
+      await signUp(data).unwrap();
+    } catch (err) {
+      console.log(err.data);
+      setError(err.data.field, {
+        message: err.data.message,
+      });
+    }
   };
 
   {
@@ -70,8 +72,7 @@ const SignUp = () => {
                   required: "*first name is required",
                 })}
               />
-              {errors.firstName?.type === "required" &&
-                errors.firstName.message}
+              {errors?.first_name?.message}
             </div>
             <div>
               <input
@@ -81,7 +82,7 @@ const SignUp = () => {
                 placeholder="Surname"
                 {...register("surname", { required: "surname is required" })}
               />
-              {errors.surname?.message}
+              {errors?.surname?.message}
             </div>
 
             <div>
@@ -93,7 +94,7 @@ const SignUp = () => {
                 {...register("passport", {
                   required: "Passport is required",
                   pattern: {
-                    value: /[0-9]{9}/,
+                    value: /^[0-9]{9}$/,
                     message: "9 digits",
                   },
                 })}
@@ -108,6 +109,7 @@ const SignUp = () => {
                 placeholder="Email"
                 {...register("email", { required: "Email is required" })}
               />
+              {errors.email?.message}
             </div>
             <div>
               <input
@@ -115,17 +117,15 @@ const SignUp = () => {
                 name="password"
                 type="password"
                 placeholder="Password"
-                value={register.password}
-                onChange={(e) => {
-                  setValue("password", e.target.value);
-                }}
-                {...register("password", { required: true })}
+                // value={register.password}
+                // onChange={(e) => {
+                //   setValue("password", e.target.value);
+                // }}
+                {...register("password", { required: "Password is required" })}
               />
-              {errors.password?.type === "required" && (
-                <p className="text-black z-10">*password is required</p>
-              )}
+              {errors.password?.message}
             </div>
-            <div>
+            {/* <div>
               <input
                 className=" mb-2  border relative border-gray-300 rounded-lg bg-gray-200 p-2"
                 name="confirmPassword"
@@ -137,7 +137,7 @@ const SignUp = () => {
               {errors.password?.type === "required" && (
                 <p className="text-black z-10">*confirm password is required</p>
               )}
-            </div>
+            </div> */}
           </div>
 
           <div className="flex flex-col w-64">
@@ -155,8 +155,9 @@ const SignUp = () => {
               type="date"
               className="mb-2  border relative border-gray-300 rounded-lg bg-gray-200 p-2"
               name="date_of_birth"
-              {...register("date_of_birth")}
+              {...register("date_of_birth", { required: "Pick a date" })}
             />
+            {errors.date_of_birth?.message}
           </div>
 
           <button

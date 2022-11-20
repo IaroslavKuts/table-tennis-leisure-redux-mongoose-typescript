@@ -21,12 +21,12 @@ import {
 const ThemeSettings = () => {
   const dispatch = useDispatch();
   const [updateTheme] = useUpdateUserDataMutation();
-  const { theme, user_id } = useSelector(selectUser)[0];
+  const { theme, _id } = useSelector(selectUser)[0];
   const currentColor = useSelector(selectCurrentColor);
 
   const handleClick = async (theme) => {
     try {
-      await updateTheme({ theme, user_id }).unwrap();
+      await updateTheme({ theme, _id }).unwrap();
     } catch (err) {
       console.log(err);
     }
@@ -54,10 +54,10 @@ const ThemeSettings = () => {
               type="radio"
               id="light"
               name="theme"
-              value="1"
+              value="light"
               className="cursor-pointer"
-              onChange={({ target }) => handleClick(Number(target.value))}
-              checked={theme === 1}
+              onChange={({ target }) => handleClick(target.value)}
+              checked={theme === "light"}
             />
             <label htmlFor="light" className="ml-2 text-md cursor-pointer">
               Light
@@ -68,10 +68,10 @@ const ThemeSettings = () => {
               type="radio"
               id="dark"
               name="theme"
-              value="2"
-              onChange={({ target }) => handleClick(Number(target.value))}
+              value="dark"
+              onChange={({ target }) => handleClick(target.value)}
               className="cursor-pointer"
-              checked={theme === 2}
+              checked={theme === "dark"}
             />
             {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
             <label htmlFor="dark" className="ml-2 text-md cursor-pointer">

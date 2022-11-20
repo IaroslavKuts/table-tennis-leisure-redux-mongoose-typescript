@@ -14,7 +14,7 @@ const authRoutes = (router) => {
     process.env.REACT_APP_REFRESH_TOKEN,
     controllers.handleRefreshToken
   );
-  router.post(process.env.REACT_APP_CREATE_USER, controllers.createUser);
+  router.post(process.env.REACT_APP_CREATE_USER, controllers.registrateUser);
   router.post(
     process.env.REACT_APP_RESTORE_PASSWORD,
     csrfDefence,

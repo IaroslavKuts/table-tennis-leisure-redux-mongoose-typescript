@@ -1,25 +1,22 @@
-const DBManager = require("../sequelize");
-const { altered_work_schedule } = DBManager.models;
-
 // CRUD functions for table `alteredWorkSchedule`
-
+const { Altered_work_schedule } = require("../mongoose_api");
 const createAlteredWorkSchedule = async (date, open, close) => {
-  await altered_work_schedule.create({ date, open, close });
+  await Altered_work_schedule.create({ date, open, close });
 };
 const readAlteredWorkSchedule = async (date) => {
-  const result = await altered_work_schedule.findOne({
-    where: { date },
-    raw: true,
+  const result = await Altered_work_schedule.findOne({
+    date,
   });
-
   return result;
 };
 
 const readAlteredBlockedDates = async (request, response) => {
-  let receivedAlteredBlockedDates = await altered_work_schedule.findAll({
-    where: { open: "-----" },
-    attributes: ["date"],
-  });
+  let receivedAlteredBlockedDates = await Altered_work_schedule.find(
+    {
+      open: "-----",
+    },
+    "-_id date"
+  );
   if (!receivedAlteredBlockedDates)
     return response
       .status(404)
@@ -29,8 +26,8 @@ const readAlteredBlockedDates = async (request, response) => {
 
 const deleteAlteredWorkSchedule = async (request, response) => {
   const { date } = request.body;
-  await altered_work_schedule.destroy({ where: { date } });
-  response.json({ message: "Success" });
+  await Altered_work_schedule.deleteOne({ date });
+  response.json({ message: "Altered date was deleted successfully" });
 };
 
 const alteredWorkScheduleController = {

@@ -1,106 +1,51 @@
-const DBManager = require("../sequelize");
-const { users, abonements, orders, persons } = DBManager.models;
-const { createPerson } = require("./personController");
-
 // CRUD functions for table `user`
+const { User, Person } = require("../mongoose_api");
 
 const readUser = async (request, response) => {
-  const user_id = request.user_id;
+  const _id = request._id;
+  let receivedUser = await User.findOne({ _id })
+    .select({
+      authorities: 1,
+      abonenement: 1,
+      email: 1,
+      person: 1,
+      orders: 1,
+      theme: 1,
+    })
+    .populate("abonement person orders")
+    .exec();
 
-  let receivedUser = await users.findOne({
-    where: { user_id },
-    attributes: ["user_id", "email", "authorities", "abonement", "theme"],
-    include: [
-      // {
-      //   model: persons,
-      //   attributes: [
-      //     "passport",
-      //     "first_name",
-      //     "surname",
-      //     "date_of_birth",
-      //     "gender",
-      //   ],
-      // },
-    ],
-  });
   if (!receivedUser) {
     return response.status(404).send({ msg: "User was not not found" });
   }
   response.json(receivedUser);
 };
 
-const createUser = async (request, response) => {
-  const {
-    email,
-    password,
-    first_name,
-    surname,
-    passport,
-    date_of_birth,
-    gender,
-  } = request.body;
-
-  let createdUser = await users.create(
-    {
-      email,
-      password,
-      theme: 1,
-      authorities: 1,
-      abonement: 1,
-    },
-    { raw: true }
-  );
-  const { user_id } = createdUser;
-  createPerson({
-    user_id,
-    first_name,
-    surname,
-    passport,
-    date_of_birth,
-    gender,
-  });
-  // .then((obtainedUser) => {
-  //   if (!obtainedUser) {
-  //     return response.status(403).send("!user Read");
-  //   }
-  //   response.json(obtainedUser);
-  // });
-};
-
-const updateUserAbonement = async (request, response) => {
-  const user_id = request.user_id;
-  const { abonement } = request.body;
-  await users.update({ abonement }, { where: { user_id } });
-  // .then((obtainedUser) => {
-  //   if (!obtainedUser) {
-  //     return response.status(403).send("!user Read");
-  //   }
-  //   response.json(obtainedUser);
-  // });
-};
-const updateUserTheme = async (request, response) => {
-  const user_id = request.user_id;
-  const { theme } = request.body;
-  await users.update({ theme }, { where: { user_id } });
-  // .then((obtainedUser) => {
-  //   if (!obtainedUser) {
-  //     return response.status(403).send("!user Read");
-  //   }
-  //   response.json(obtainedUser);
-  // });
-};
-
 const updateUserData = async (request, response) => {
-  const user_id = request.user_id;
-  console.log(request.body);
-  // update ignores user_id that is in body
-  await users.update({ ...request.body }, { where: { user_id } });
-  response.json({ message: "Success" });
+  try {
+    const { _id, ...rest } = request.body;
+    const emailExists = await emailExists(rest.email);
+
+    if (emailExists)
+      return response
+        .status(409)
+        .json({ message: "This email is taken", field: "email" });
+
+    await User.updateOne({ _id }, { ...rest });
+    response.json({ message: "User was updated sucessfully" });
+  } catch (error) {
+    response.json({ message: error });
+  }
 };
+
+const emailExists = async (email) => {
+  let result = await User.findOne({ email });
+  return !!result;
+};
+
 const userController = {
   readUser,
-  createUser,
-  updateUserTheme,
   updateUserData,
+  emailExists,
 };
 module.exports = userController;

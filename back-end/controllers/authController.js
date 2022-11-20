@@ -1,9 +1,9 @@
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
-const DBManager = require("../sequelize");
 const auxillary_functions = require("../auxillary_functions");
 const services = require("../services");
-const { users } = DBManager.models;
+const userController = require("./userController");
+const personController = require("./personController");
+const { User, Person } = require("../mongoose_api");
 
 //Back-end function tha is responsible for loggin in a user
 const handleLogIn = async (request, response) => {
@@ -17,66 +17,61 @@ const handleLogIn = async (request, response) => {
       error: { message: "Login endpoint. password is undefined" },
     });
 
-  let receivedUser = await users.findOne({
-    where: { email },
-    attributes: ["user_id", "authorities", "password", "theme"],
-  });
+  try {
+    let receivedUser = await User.findOne({ email });
 
-  if (!receivedUser) {
-    return response
-      .status(400)
-      .json({ error: { message: "User does not exist" } });
-  } else {
-    receivedUser = receivedUser.toJSON();
+    if (!receivedUser) {
+      return response
+        .status(400)
+        .json({ message: "There is no user with such email" });
+    }
+    console.log(receivedUser);
+
+    let passwordsAreSame = await receivedUser.comparePassword(password);
+    if (!passwordsAreSame)
+      return response.status(401).json({ message: "Password is incorrect" });
+
+    const { authorities, _id } = receivedUser;
+    const csrfToken = request.get("x-xsrf-token");
+    const accessToken = jwt.sign(
+      { _id, authorities, email },
+      process.env.JWT_TOKEN,
+      {
+        expiresIn: "10s",
+      }
+    );
+    const refreshToken = jwt.sign(
+      { authorities, _id, email },
+      process.env.JWT_TOKEN,
+      {
+        expiresIn: "1d",
+      }
+    );
+    User.updateOne({ _id }, { refreshToken }).exec();
+    response.cookie("jwtRefreshToken", refreshToken, {
+      maxAge: 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      //secure: true,
+      //sameSite: "None";
+    });
+    response.json({ accessToken, authorities });
+  } catch (err) {
+    response.json(err);
   }
-
-  // let passwordsAreSame = await bcrypt.compare(password, receivedUser.password);
-  // if (!passwordsAreSame)
-  //   return response
-  //     .status(401)
-  //     .json({ error: { message: "Password is incorrect" } });
-
-  const { authorities, user_id } = receivedUser;
-  const csrfToken = request.get("x-xsrf-token");
-  const accessToken = jwt.sign(
-    { user_id, authorities, email },
-    process.env.JWT_TOKEN,
-    {
-      expiresIn: "10s",
-    }
-  );
-
-  const refreshToken = jwt.sign(
-    { authorities, user_id, email },
-    process.env.JWT_TOKEN,
-    {
-      expiresIn: "1d",
-    }
-  );
-
-  users.update({ refreshToken }, { where: { user_id } });
-  response.cookie("jwtRefreshToken", refreshToken, {
-    maxAge: 24 * 60 * 60 * 1000,
-    httpOnly: true,
-    //secure: true,
-    //sameSite: "None";
-  });
-
-  response.json({ accessToken, authorities });
 };
 
 const handleRefreshToken = async (request, response) => {
   const jwtRefreshToken = request.cookies["jwtRefreshToken"];
-  // if (!jwtRefreshToken)
-  //   return response.status(401).json({
-  //     error: { message: "Refresh end-point. jwtRefreshToken is undefined" },
-  //   });
+  let receivedUser = await User.findOne({
+    refreshToken: jwtRefreshToken,
+  })
+    .select({
+      _id: 1,
+      authorities: 1,
 
-  let receivedUser = await users.findOne({
-    where: { refreshToken: jwtRefreshToken },
-    attributes: ["user_id", "authorities", "password", "theme"],
-  });
-
+      theme: 1,
+    })
+    .exec();
   if (!receivedUser) {
     return response.status(400).json({
       error: { message: "User does not exist" },
@@ -84,42 +79,37 @@ const handleRefreshToken = async (request, response) => {
   } else {
     receivedUser = receivedUser.toJSON();
   }
-
-  const { user_id, email, authorities } = receivedUser;
+  const { _id, email, authorities } = receivedUser;
   jwt.verify(jwtRefreshToken, process.env.JWT_TOKEN, async (err, decoded) => {
     if (err)
       return response.status(403).json({
         error: err,
       });
-    if (user_id !== decoded.user_id)
+    if (_id !== decoded._id)
       return response.status(403).json({
         error: { message: "Decoded user_id is not equal to user_id from DB" },
       });
-
     const accessToken = jwt.sign(
-      { user_id, authorities, email },
+      { _id, authorities, email },
       process.env.JWT_TOKEN,
       {
         expiresIn: "10s",
       }
     );
-
     const refreshToken = jwt.sign(
-      { authorities, user_id, email },
+      { authorities, _id, email },
       process.env.JWT_TOKEN,
       {
         expiresIn: "1d",
       }
     );
-
-    users.update({ refreshToken }, { where: { user_id } });
+    User.updateOne({ _id }, { refreshToken });
     response.cookie("jwtRefreshToken", refreshToken, {
       maxAge: 24 * 60 * 60 * 1000,
       httpOnly: true,
       //secure: true,
       //sameSite: "None";
     });
-
     response.json({ accessToken, authorities });
   });
 };
@@ -131,20 +121,21 @@ const handleLogout = async (request, response) => {
     return response.status(401).json({
       error: { message: "Logout end-point. jwtRefreshToken is undefined" },
     });
-  users.update(
-    { refreshToken: null },
-    { where: { refreshToken: jwtRefreshToken } }
-  ); //VALID UNTIL
+  User.updateOne(
+    { refreshToken: jwtRefreshToken },
+    { refreshToken: null }
+  ).exec();
+
+  //VALID UNTIL
   response.clearCookie("jwtRefreshToken", { httpOnly: true }); // sameSite: "None", secure: true
   response.sendStatus(204);
-
   // Delete refreshToken in db
 };
 
 const restorePassword = async (request, response) => {
   const { email } = request.body;
   const password = auxillary_functions.generateNumber();
-  users.update({ password }, { where: { email }, individualHooks: true });
+  User.updateOne({ password }, { where: { email }, individualHooks: true });
   services.sendMail(
     email,
     "Password restoration",
@@ -152,10 +143,56 @@ const restorePassword = async (request, response) => {
   );
 };
 
+const registrateUser = async (request, response) => {
+  const {
+    email,
+    password,
+    first_name,
+    surname,
+    passport,
+    date_of_birth,
+    gender,
+  } = request.body;
+  const emailExists = await userController.emailExists(email);
+  const passportExists = await personController.passportExists(passport);
+  if (emailExists)
+    return response
+      .status(409)
+      .json({ message: "This email is taken", field: "email" });
+  if (passportExists)
+    return response
+      .status(409)
+      .json({ message: "This passport is taken", field: "passport" });
+  try {
+    const createdUser = new User({
+      email,
+      password,
+    });
+    console.log(createdUser);
+    const createdPerson = new Person({
+      first_name,
+      surname,
+      passport,
+      date_of_birth,
+      gender,
+    });
+    createdUser.person = createdPerson._id;
+    await createdUser.save();
+    await createdPerson.save();
+
+    response.json({ message: "User was created successfully" });
+  } catch (err) {
+    console.log(err.keyPattern);
+    const [field] = Object.keys(err.keyPattern);
+    response.status(409).json(field);
+  }
+};
+
 const authController = {
   handleLogIn,
   handleRefreshToken,
   handleLogout,
   restorePassword,
+  registrateUser,
 };
 module.exports = authController;

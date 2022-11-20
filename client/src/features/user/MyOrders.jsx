@@ -18,16 +18,16 @@ import { contextMenuItems, ordersGrid } from "../../data/dummy";
 import { Header } from "../../common/components";
 import OrderTimeChoice from "./OrderTimeChoice";
 
-import { useDeleteOrderMutation, useGetUserOrdersQuery } from "./ordersSlice";
+import { useDeleteOrderMutation } from "./ordersSlice";
+import { useSelector } from "react-redux";
+import { selectUser } from "./userSlice";
 
 //Component that gives to an user an option to browse its orders
 //User can also change/delete any of its orders
 const MyOrders = () => {
   console.log("MyOrders rendered");
-  const { data, isLoading, isSuccess, isError, error } =
-    useGetUserOrdersQuery();
+  const user = useSelector(selectUser)[0];
   const [deleteOrder] = useDeleteOrderMutation();
-  const orders = Object.entries(data.entities).map(([id, order]) => order);
 
   const editorTemplate = (args) => {
     // Calling any setState causes trouble, but still renders);
@@ -46,7 +46,10 @@ const MyOrders = () => {
       }
       if (args.requestType === "delete") {
         if (new Date(args.data[0].date_of_game) > new Date()) {
-          await deleteOrder({ order_id: args.data[0].order_id }).unwrap();
+          // await deleteOrder({
+          //   order_id: args.data[0]._id,
+          //   _id: user._id,
+          // }).unwrap();
         } else {
           args.cancel = true;
         }
@@ -69,12 +72,10 @@ const MyOrders = () => {
   return (
     <div className="flex flex-col items-center m-2 md:m-10 mt-24 p-2 md:p-10 bg-white rounded-3xl">
       <Header title="My Orders" />
-      {isLoading && <p>"Loading..."</p>}
-      {isError && <p>{error}</p>}
-      {isSuccess && (
+      {
         <GridComponent
           id="gridcomp"
-          dataSource={orders}
+          dataSource={[...user.orders]}
           allowPaging
           allowSorting
           allowExcelExport
@@ -105,7 +106,7 @@ const MyOrders = () => {
             ]}
           />
         </GridComponent>
-      )}
+      }
     </div>
   );
 };

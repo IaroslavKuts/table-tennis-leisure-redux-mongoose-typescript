@@ -10,13 +10,14 @@ import { useLoginMutation } from "./authorizationApiSlice";
 
 //Start page of this project
 export default function Login() {
-  const [login, { data }] = useLoginMutation();
+  const [login] = useLoginMutation();
   const dispatch = useDispatch();
   // const { setAuthentication, setCurrentMode } = useStateContext();
   const navigate = useNavigate();
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -36,11 +37,11 @@ export default function Login() {
 
       dispatch(setToken({ accessToken }));
       dispatch(setUserData({ authorities }));
-      authorities === 1 && navigate("/UserApp/Calendar");
-      authorities === 2 && navigate("/AdminApp/DayManagmentCertainDate");
-      //   : navigate("/AdminApp/DayManagmentCertainDate");
+      authorities === "user" && navigate("/UserApp/Calendar");
+      authorities === "admin" && navigate("/AdminApp/DayManagmentCertainDate");
     } catch (err) {
-      console.log(err);
+      err.status === 400 && setError("email", { message: err.data.message });
+      err.status === 401 && setError("password", { message: err.data.message });
     }
   };
 
@@ -69,8 +70,7 @@ export default function Login() {
               name="email"
               placeholder="Username"
               {...register("email", {
-                required: "*user name is required",
-                includes: { value: "@", message: "Not include" },
+                required: "email is required",
               })}
             />
             {errors.email?.message}
@@ -81,7 +81,7 @@ export default function Login() {
               type="password"
               name="password"
               placeholder="Password"
-              {...register("password", { required: true })}
+              {...register("password", { required: "Password is required" })}
             />
             {errors.password?.message}
           </div>

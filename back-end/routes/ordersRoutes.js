@@ -4,7 +4,6 @@ const csrfDefence = csrf({ cookie: { httpOnly: true } });
 
 //End-points for functions declared in ordersController.js
 const ordersRoutes = (router) => {
-  router.get(process.env.REACT_APP_READ_ORDERS, controllers.readOrders);
   router.post(
     process.env.REACT_APP_UPDATE_ORDERS,
     csrfDefence,
@@ -15,6 +14,11 @@ const ordersRoutes = (router) => {
     process.env.REACT_APP_DELETE_ORDER,
     csrfDefence,
     controllers.deleteOrder
+  );
+  router.post(
+    process.env.REACT_APP_CREATE_ORDERS,
+    csrfDefence,
+    controllers.createOrders
   );
 };
 

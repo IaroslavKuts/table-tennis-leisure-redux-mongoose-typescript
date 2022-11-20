@@ -13,7 +13,16 @@ export const authApiSlice = apiSlice.injectEndpoints({
     getRefreshToken: builder.query({
       query: () => process.env.REACT_APP_REFRESH_TOKEN,
     }),
+    signUp: builder.mutation({
+      query: (data) => ({
+        url: process.env.REACT_APP_CREATE_USER,
+        method: "POST",
+        headers: { "x-xsrf-token": localStorage.getItem("csrf") },
+        body: { ...data },
+      }),
+    }),
   }),
 });
 
-export const { useLoginMutation, useGetRefreshTokenQuery } = authApiSlice;
+export const { useLoginMutation, useGetRefreshTokenQuery, useSignUpMutation } =
+  authApiSlice;

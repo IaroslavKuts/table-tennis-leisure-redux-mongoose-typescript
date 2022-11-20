@@ -17,15 +17,7 @@ const DayManagmentCertainDay = () => {
       .fill(0)
       .map((el, i) => ({ day_id: i, open: "", close: "" }))
   );
-  const weekDays = [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ];
+
   const [updateBasicDaySchedule] = useUpdateBasicDayScheduleMutation();
   const {
     data: basicDaysSchedule,
@@ -71,8 +63,8 @@ const DayManagmentCertainDay = () => {
     try {
       await updateBasicDaySchedule({
         day_id: i,
-        open: chosenData[i].open,
-        close: chosenData[i].close,
+        open: chosenData[i].open || basicDaysSchedule[i].open,
+        close: chosenData[i].close || basicDaysSchedule[i].close,
       }).unwrap();
     } catch (err) {
       console.log(err);
@@ -85,12 +77,10 @@ const DayManagmentCertainDay = () => {
       <div className="grid md:grid-cols-7 ">
         {isErrorBasicDaysSchedule && <p>{errorBasicDaysSchedule.message}</p>}
         {isSuccessBasicDaysSchedule &&
-          basicDaysSchedule.map(({ open, close, day_id }) => {
+          basicDaysSchedule.map(({ open, close, day_id, day_name }) => {
             return (
               <div className="flex flex-col items-center bg-white text-slate-900 m-4 p-8 rounded-xl shadow-2xl relative">
-                <p className="text-1xl font-bold py-4 flex">
-                  {weekDays[day_id]}
-                </p>
+                <p className="text-1xl font-bold py-4 flex">{day_name}</p>
 
                 <select
                   value={

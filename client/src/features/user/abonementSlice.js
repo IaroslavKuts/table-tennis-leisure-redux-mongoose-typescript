@@ -1,8 +1,8 @@
 import { createSelector, createEntityAdapter } from "@reduxjs/toolkit";
 import { apiSlice } from "../../app/api/apiSlice";
 const abonementsAdapter = createEntityAdapter({
-  selectId: (abonement) => abonement.id_abonement,
-  sortComparer: (a, b) => a.id_abonement - b.id_abonement,
+  selectId: (abonement) => abonement._id,
+  sortComparer: (a, b) => a._id - b._id,
 });
 
 const initialState = abonementsAdapter.getInitialState();

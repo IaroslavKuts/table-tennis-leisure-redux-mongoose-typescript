@@ -1,5 +1,4 @@
 const jwt = require("jsonwebtoken");
-
 //Function that verifies jwtToken
 const verifyJWT = (request, response, next) => {
   let jwtRefreshToken = request.cookies["jwtRefreshToken"];
@@ -17,12 +16,12 @@ const verifyJWT = (request, response, next) => {
       next(error);
       return;
     }
-    request.user_id = decoded.user_id;
+    request._id = decoded._id;
     request.authorities = decoded.authorities;
 
     console.log(
       "Verified " +
-        `Request.user_id ${request.user_id} Request.authorities ${request.authorities}`
+        `Request.user_id ${request._id} Request.authorities ${request.authorities}`
     );
     next();
   });

@@ -26,16 +26,16 @@ import { selectUser } from "./userSlice";
 const UserApp = () => {
   console.log("UserApp render");
   const dispatch = useDispatch();
-  useGetPersonQuery();
+
   useGetAllAbonementsQuery();
-  useGetUserOrdersQuery();
+
   const activeMenu = useSelector(selectActiveMenu);
   const themeSettings = useSelector(selectThemeSettings);
   const currentColor = useSelector(selectCurrentColor);
   const { theme } = useSelector(selectUser)[0];
 
   return (
-    <div className={theme === 1 ? "light" : "dark"}>
+    <div className={theme}>
       <div className="flex relative dark:bg-main-dark-bg">
         <div className="fixed right-4 bottom-4" style={{ zIndex: "1000" }}>
           <TooltipComponent content="Settings" position="Top">

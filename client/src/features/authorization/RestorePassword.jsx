@@ -1,6 +1,6 @@
 import React from "react";
 import { useForm } from "react-hook-form";
-// import { corsMaker } from "../data/dummy";
+import { corsMaker } from "../../data/dummy";
 
 import loginImg from "../../data/LogIni.jpg";
 

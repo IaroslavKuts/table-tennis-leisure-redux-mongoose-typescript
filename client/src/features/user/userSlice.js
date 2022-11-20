@@ -2,7 +2,7 @@ import { createSelector, createEntityAdapter } from "@reduxjs/toolkit";
 import { apiSlice } from "../../app/api/apiSlice";
 
 const userAdapter = createEntityAdapter({
-  selectId: (user) => user.user_id,
+  selectId: (user) => user._id,
 });
 
 const initialState = userAdapter.getInitialState();
@@ -29,7 +29,7 @@ export const userApiSlice = apiSlice.injectEndpoints({
         body: { ...userData },
       }),
       invalidatesTags: (result, error, arg) => {
-        return [{ type: "User", id: arg.user_id }];
+        return [{ type: "User", _id: arg._id }];
       },
     }),
   }),

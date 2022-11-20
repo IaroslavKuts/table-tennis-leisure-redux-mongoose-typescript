@@ -86,7 +86,7 @@ const Sidebar = () => {
           <div className="flex justify-between items-center">
             <Link
               to={
-                authorities === 2
+                authorities === "admin"
                   ? "/AdminApp/DayManagmentCertainDate"
                   : "/UserApp/Calendar"
               }
@@ -109,7 +109,7 @@ const Sidebar = () => {
             </TooltipComponent>
           </div>
           <div className="mt-10">
-            {authorities === 2 ? adminLinks : userLinks}
+            {authorities === "admin" ? adminLinks : userLinks}
           </div>
         </React.Fragment>
       )}

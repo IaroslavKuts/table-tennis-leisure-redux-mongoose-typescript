@@ -1,38 +1,21 @@
-const DBManager = require("../sequelize");
-const { time_periods } = DBManager.models;
-const { Op, fn, col, literal, where } = require("sequelize");
-
 // CRUD functions for table `time_periods`
+const { Time_periods } = require("../mongoose_api");
+const readTimePeriodsByIDs = async (chosenTimePeriods) => {
+  let receivedTimePeriods = await Time_periods.find(
+    {
+      time_period_id: { $in: chosenTimePeriods },
+    },
+    "-_id -_time_period_id"
+  );
 
-const readTimePeriodPriceByID = async (request, response) => {
-  const { time_period_id } = request.body;
-  let receivedPrice = await time_periods.findOne({
-    where: { time_period_id },
-    attributes: ["price"],
-  });
-
-  if (!receivedPrice) {
-    return response.status(400).send("!readTimePeriodPriceByID");
-  }
-  response.json(receivedPrice);
-};
-
-const readPricesOfCertainTimePeriods = async (chosenTimePeriods) => {
-  // const { time_periods_arr } = request.body;
-  let receivedPrices = await time_periods.findAll({
-    raw: true,
-    where: { time_period_id: { [Op.in]: chosenTimePeriods } },
-    attributes: ["time_period_id", "start_time", "end_time", "price"],
-  });
-
-  // if (!receivedPrices) {
+  // if (!receivedTimePeriods) {
   //   return response.status(400).send("!readTimePeriodPriceByID");
   // }
-  // response.json(receivedPrices);
-  return receivedPrices;
+
+  return receivedTimePeriods;
 };
 
 const timePeriodsController = {
-  readPricesOfCertainTimePeriods,
+  readTimePeriodsByIDs,
 };
 module.exports = timePeriodsController;

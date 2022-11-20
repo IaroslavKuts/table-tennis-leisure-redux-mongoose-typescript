@@ -1,41 +1,25 @@
-const DBManager = require("../sequelize");
-const { persons } = DBManager.models;
-
 // CRUD functions for table `person`
-
-const readPerson = async (request, response) => {
-  const user_id = request.user_id;
-
-  let receivedPerson = await persons.findOne({
-    where: { user_id },
-  });
-  if (!receivedPerson)
-    return response
-      .status(404)
-      .send({ msg: "Basic blocked days were not found" });
-  response.json(receivedPerson);
-};
-
+const { Person } = require("../mongoose_api");
 const updatePerson = async (request, response) => {
-  const user_id = request.user_id;
-  const { first_name, surname, date_of_birth, gender, passport } = request.body;
-
-  persons.update(
-    { first_name, surname, date_of_birth, gender, passport },
-    { where: { user_id } }
-  );
-  response.json({ message: "Success" });
+  try {
+    const { personID, ...rest } = request.body;
+    console.log(rest);
+    if (rest?.passport && (await passportExists(rest.passport))) {
+      return response
+        .status(409)
+        .json({ message: "This passport is taken", field: "passport" });
+    }
+    await Person.updateOne({ _id: personID }, { ...rest });
+    response.json({ message: "Personal data was updated sucessfully" });
+  } catch (err) {
+    response.json({ message: err });
+  }
 };
 
-const createPerson = async (personData) => {
-  await persons.create(personData);
-  // .then((obtainedUser) => {
-  //   if (!obtainedUser) {
-  //     return response.status(403).send("!user Read");
-  //   }
-  //   response.json(obtainedUser);
-  // });
+const passportExists = async (passport) => {
+  const result = await Person.findOne({ passport });
+  return !!result;
 };
 
-const personController = { readPerson, updatePerson, createPerson };
+const personController = { updatePerson, passportExists };
 module.exports = personController;

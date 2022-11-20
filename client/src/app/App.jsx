@@ -42,7 +42,9 @@ const App = () => {
 
       <Route element={<AuthenticationRequired />}>
         <Route
-          element={<PermissionRequired hasPermission={authorities === 1} />}
+          element={
+            <PermissionRequired hasPermission={authorities === "user"} />
+          }
         >
           <Route path="/UserApp" element={<UserApp />}>
             <Route path="/UserApp/Calendar" element={<Calendar />} />
@@ -59,7 +61,9 @@ const App = () => {
         </Route>
 
         <Route
-          element={<PermissionRequired hasPermission={authorities === 2} />}
+          element={
+            <PermissionRequired hasPermission={authorities === "admin"} />
+          }
         >
           <Route path="/AdminApp" element={<AdminApp />}>
             {" "}

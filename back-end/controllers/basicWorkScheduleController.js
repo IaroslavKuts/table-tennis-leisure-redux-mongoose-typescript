@@ -1,50 +1,32 @@
-const DBManager = require("../sequelize");
-const { basic_work_schedule } = DBManager.models;
-
 // CRUD functions for table `basicWorkSchedule`
-
+const { Basic_work_schedule } = require("../mongoose_api");
 const updateScheduleOfCertainDay = async (day_id, open, close) => {
-  await basic_work_schedule.update(
-    { open, close },
+  await Basic_work_schedule.updateOne(
+    { day_id },
     {
-      where: { day_id },
+      open,
+      close,
     }
   );
 };
 
 const readWorkSchedule = async (day_id) => {
-  const result = await basic_work_schedule.findOne({
-    where: { day_id },
-    raw: true,
+  const result = await Basic_work_schedule.findOne({
+    day_id,
   });
-
   return result;
 };
 const readAllWorkSchedules = async (request, response) => {
-  let receivedAllWorkSchedules = await basic_work_schedule.findAll({
-    attributes: ["open", "close", "day_id"],
-  });
+  let receivedAllWorkSchedules = await Basic_work_schedule.find({}, "-_id");
+
   if (!receivedAllWorkSchedules)
     return response.status(404).send({ msg: "Work schedules were not found" });
   response.json(receivedAllWorkSchedules);
-};
-
-const readBasicBlockedDays = async (request, response) => {
-  let receivedBasicBlockedDays = await basic_work_schedule.findAll({
-    where: { open: "-----" },
-    attributes: ["day_id"],
-  });
-  if (!receivedBasicBlockedDays)
-    return response
-      .status(404)
-      .send({ msg: "Basic blocked days were not found" });
-  response.json(receivedBasicBlockedDays);
 };
 
 const basicWorkScheduleController = {
   updateScheduleOfCertainDay,
   readWorkSchedule,
   readAllWorkSchedules,
-  readBasicBlockedDays,
 };
 module.exports = basicWorkScheduleController;

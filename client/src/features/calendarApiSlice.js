@@ -3,33 +3,34 @@ import { apiSlice } from "../app/api/apiSlice";
 export const calendarApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getUnavailableTimePeriods: builder.query({
-      query: () => process.env.REACT_APP_READ_UNAVAILABLE_TIME_PERIODS,
-      transformResponse: (responseData) => {
-        const result = responseData.map(
-          ({ date_of_game, start_time, end_time }) => {
-            const date = date_of_game.split("-");
-            start_time = start_time.split(":");
-            end_time = end_time.split(":");
-            return {
-              start_time_data_array: [
-                date[0],
-                date[1] - 1,
-                date[2],
-                start_time[0],
-                start_time[1],
-              ],
-              end_time_data_array: [
-                date[0],
-                date[1] - 1,
-                date[2],
-                end_time[0],
-                end_time[1],
-              ],
-            };
-          }
-        );
-        return result;
-      },
+      query: (dateOfGame) =>
+        `${process.env.REACT_APP_READ_UNAVAILABLE_TIME_PERIODS}?dateOfGame=${dateOfGame}`,
+      // transformResponse: (responseData) => {
+      //   const result = responseData.map(
+      //     ({ date_of_game, start_time, end_time }) => {
+      //       const date = date_of_game.split("-");
+      //       start_time = start_time.split(":");
+      //       end_time = end_time.split(":");
+      //       return {
+      //         start_time_data_array: [
+      //           date[0],
+      //           date[1] - 1,
+      //           date[2],
+      //           start_time[0],
+      //           start_time[1],
+      //         ],
+      //         end_time_data_array: [
+      //           date[0],
+      //           date[1] - 1,
+      //           date[2],
+      //           end_time[0],
+      //           end_time[1],
+      //         ],
+      //       };
+      //     }
+      //   );
+      //   return result;
+      // },
       //   providesTags: (result, error, arg) => [
       //     { type: "UnavailableTimePeriods", id: "LIST" },
       //     ...result.ids.map((id) => ({ type: "Calendar", id })),
@@ -68,7 +69,7 @@ export const calendarApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["BlockedDates"],
     }),
-    getFilteredTimePeriods: builder.query({
+    getTimePeriods: builder.query({
       query: (dateOfGame) =>
         `${process.env.REACT_APP_READ_FILTERED_TIME_PERIODS}?dateOfGame=${dateOfGame}`,
       keepUnusedDataFor: 60,
@@ -83,5 +84,5 @@ export const {
   useGetBasicDaysSchedulesQuery,
   useUpdateBasicDayScheduleMutation,
   useGetUnavailableTimePeriodsQuery,
-  useGetFilteredTimePeriodsQuery,
+  useGetTimePeriodsQuery,
 } = calendarApiSlice;

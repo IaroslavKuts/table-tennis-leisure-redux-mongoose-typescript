@@ -92,7 +92,7 @@ const AddAbonement = () => {
                   required: "Abonement name is required",
                   pattern: {
                     value: /^[A-Za-z\s]*$/, // any amount of letters and spaces
-                    message: "Letters alowed only",
+                    message: "Letters allowed only",
                   },
                 })}
               />

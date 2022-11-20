@@ -17,16 +17,10 @@ import {
 //Component that helps to create different reports
 const CreateReport = () => {
   const [{ start_date, end_date }, setDateRange] = useState({
-    start_date: (() => {
-      let star_date = new Date(new Date().setDate(new Date().getDate() - 30))
-        .toLocaleDateString()
-        .split("/");
-      return `${star_date[2]}-${star_date[0]}-${star_date[1]}`;
-    })(),
-    end_date: (() => {
-      let end_date = new Date().toLocaleDateString().split("/");
-      return `${end_date[2]}-${end_date[0]}-${end_date[1]}`;
-    })(),
+    start_date: new Date(new Date().setDate(new Date().getDate() - 30))
+      .toISOString()
+      .substring(0, 10),
+    end_date: new Date().toISOString().substring(0, 10),
   });
 
   const [{ passport }, setPassport] = useState({ passport: "" });
@@ -87,11 +81,8 @@ const CreateReport = () => {
     const formProps = handleForm(e);
     formProps?.start_date && setDateRange(formProps);
     formProps?.passport && setPassport(formProps);
-    // const i = buttonsArray.findIndex(({ show }) => show);
-
-    // if (i < 4) queryArray[i].refetch();
   }
-  console.log(1111111111);
+
   function handleShow(index) {
     setButtonsArray((prev) =>
       prev.map((el, i) => {

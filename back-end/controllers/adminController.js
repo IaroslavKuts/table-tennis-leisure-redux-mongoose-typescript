@@ -1,296 +1,466 @@
-const DBManager = require("../sequelize");
 const auxillary_functions = require("../auxillary_functions");
 const services = require("../services");
-const { updateScheduleOfCertainDay } = require("./basicWorkScheduleController");
+const { User, Order, Abonement, Person } = require("../mongoose_api");
 const {
   createAlteredWorkSchedule,
 } = require("./alteredWorkScheduleController");
-
-const { Op, fn, col, literal, where } = require("sequelize");
-const { users, abonements, orders, persons, basic_work_schedule } =
-  DBManager.models;
-
+const { updateScheduleOfCertainDay } = require("./basicWorkScheduleController");
 // Admin Functions
 //Each of them receive data from font-end and then return processed data back to front-end
 //These function are of admin usage mostly
 const readCustomersAbonements = async (request, response) => {
-  await abonements
-    .findAll({
-      raw: true,
-      attributes: [
-        ["name_of_abonement", "x"], // for PieChart
-        [fn("COUNT", col("name_of_abonement")), "y"],
-      ],
-      group: ["name_of_abonement"],
-      include: [
-        {
-          model: users,
-          attributes: [],
+  const customersAbonements = await User.aggregate([
+    {
+      $lookup: {
+        from: "abonements",
+        localField: "abonement",
+        foreignField: "_id",
+        as: "abonement",
+      },
+    },
+    {
+      $group: {
+        _id: "$abonement.name_of_abonement",
+        y: {
+          $sum: 1,
         },
-      ],
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        x: {
+          $arrayElemAt: ["$_id", 0],
+        },
+        y: 1,
+      },
+    },
+  ]);
+  const total = customersAbonements.reduce((acc, { y }) => acc + y, 0);
+  console.log(customersAbonements, "customersAbonements");
+  response.json(
+    customersAbonements.map(({ x, y }) => {
+      const percent = Math.round((y / total) * 100);
+      return { x, y, text: `${percent}%` };
     })
-    .then((customersAbonements) => {
-      if (!customersAbonements) {
-        return response
-          .status(400)
-          .send("readCustomersAbonements. !readCustomersAbonements");
-      }
-
-      const total = customersAbonements.reduce((acc, { y }) => acc + y, 0);
-
-      response.json(
-        customersAbonements.map(({ x, y }) => {
-          const percent = Math.round((y / total) * 100);
-          return { x, y, text: `${percent}%` };
-        })
-      );
-    });
+  );
 };
 
 const readCustomersAges = async (request, response) => {
-  await persons
-    .findAll({
-      raw: true,
-      attributes: [
-        [fn("FLOOR", literal("year(curdate())-year(date_of_birth)")), "x"],
-        [fn("COUNT", col("date_of_birth")), "y"],
-      ],
-      group: ["x"],
+  const customersAges = await Person.aggregate([
+    {
+      $addFields: {
+        dateISO: {
+          $toDate: "$date_of_birth",
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        age: {
+          $dateDiff: {
+            endDate: new Date(),
+            startDate: "$dateISO",
+            unit: "year",
+          },
+        },
+      },
+    },
+    {
+      $group: {
+        _id: "$age",
+        amount: {
+          $sum: 1,
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        x: "$_id",
+        y: "$amount",
+      },
+    },
+  ]);
+  console.log(customersAges, "customersAges");
+  response.json(
+    customersAges.map((el) => {
+      return { ...el, text: `Age: ${el.x}  Amount: ${el.y}` };
     })
-    .then((customersAges) => {
-      if (!customersAges) {
-        return response
-          .status(400)
-          .send("readCustomersAges. !readCustomersAges");
-      }
-      response.json(
-        customersAges.map((el) => {
-          return { ...el, text: `Age: ${el.x}  Amount: ${el.y}` };
-        })
-      );
-    });
+  );
 };
 
 const readProfit = async (request, response) => {
   let {
-    start_date = new Date(
-      new Date().setDate(new Date().getDate() - 30)
-    ).toLocaleDateString(),
-    end_date = new Date().toLocaleDateString(),
-    start_payment = 0,
-    end_payment = Math.pow(2, 31) - 1,
+    start_date = new Date(new Date().setDate(new Date().getDate() - 30))
+      .toISOString()
+      .substring(0, 10),
+    end_date = new Date().toISOString().substring(0, 10),
   } = request.query;
-  console.log(start_date, end_date, 111111111111111);
-
-  // [start_date, end_date] = auxillary_functions.restSQLDateFormater(
-  //   start_date,
-  //   end_date
-  // );
-  console.log(start_date, end_date);
-  await orders
-    .findAll({
-      attributes: [
-        [fn("SUM", col("payment")), "y"],
-        ["date_of_game", "x"],
-      ],
-      group: ["date_of_game"],
-      having: {
-        x: { [Op.between]: [start_date, end_date] },
-        y: { [Op.between]: [start_payment, end_payment] },
+  console.log(`End ${end_date} Start ${start_date}`);
+  const profit = await Order.aggregate([
+    {
+      $group: {
+        _id: "$date_of_game",
+        profit: {
+          $sum: "$payment",
+        },
       },
-    })
-    .then((profit) => {
-      if (!profit) {
-        return response.status(400).send("readProfit. !readProfit");
-      }
-
-      response.json(profit);
-    });
+    },
+    {
+      $match: {
+        $and: [
+          {
+            _id: {
+              $gt: start_date,
+            },
+          },
+          {
+            _id: {
+              $lt: end_date,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        x: "$_id",
+        y: "$profit",
+      },
+    },
+  ]);
+  console.log(profit, "profit");
+  response.json(profit);
 };
 
 const readDaysLoad = async (request, response) => {
   let {
-    start_date = new Date(
-      new Date().setDate(new Date().getDate() - 30)
-    ).toLocaleDateString(),
-    end_date = new Date().toLocaleDateString(),
+    start_date = new Date(new Date().setDate(new Date().getDate() - 30))
+      .toISOString()
+      .substring(0, 10),
+    end_date = new Date(),
   } = request.query;
-
-  // [start_date, end_date] = auxillary_functions.restSQLDateFormater(
-  //   start_date,
-  //   end_date
-  // );
-
-  await orders
-    .findAll({
-      attributes: [
-        [fn("COUNT", col("date_of_game")), "y"],
-        ["date_of_game", "x"],
-      ],
-      group: ["date_of_game"],
-      having: {
-        date_of_game: { [Op.between]: [start_date, end_date] },
+  const daysLoad = await Order.aggregate([
+    {
+      $group: {
+        _id: "$date_of_game",
+        daysLoad: {
+          $sum: 1,
+        },
       },
-    })
-    .then((timeLoad) => {
-      if (!timeLoad) {
-        return response.status(400).send("readTimeLoad. !readTimeLoad");
-      }
-      response.json(timeLoad);
-    });
+    },
+    {
+      $match: {
+        $and: [
+          {
+            _id: {
+              $gt: start_date,
+            },
+          },
+          {
+            _id: {
+              $lt: end_date,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        x: "$_id",
+        y: "$daysLoad",
+      },
+    },
+  ]);
+  console.log(daysLoad, "daysLoad");
+  response.json(daysLoad);
 };
 
 const readUsersDataByPayment = async (request, response) => {
   let {
-    start_date = new Date(
-      new Date().setDate(new Date().getDate() - 30)
-    ).toLocaleDateString(),
-    end_date = new Date().toLocaleDateString(),
-    start_payment = 0,
-    end_payment = Math.pow(2, 32) - 1,
+    start_date = new Date(new Date().setDate(new Date().getDate() - 30))
+      .toISOString()
+      .substring(0, 10),
+    end_date = new Date().toISOString().substring(0, 10),
   } = request.query;
-
-  // [start_date, end_date] = auxillary_functions.restSQLDateFormater(
-  //   start_date,
-  //   end_date
-  // );
-
-  await orders
-    .findAll({
-      attributes: [[fn("SUM", col("payment")), "profit"], "user_id"],
-      where: { date_of_game: { [Op.between]: [start_date, end_date] } },
-      group: ["user_id"],
-      having: {
-        profit: { [Op.between]: [start_payment, end_payment] },
+  usersData = await User.aggregate([
+    {
+      $match: {
+        authorities: "user",
       },
-      include: [
-        { model: users, attributes: ["email"] },
-        { model: persons, attributes: ["first_name", "surname"] },
-      ],
-    })
-    .then((profit) => {
-      if (!profit) {
-        return response.status(400).send("readProfit. !readProfit");
-      }
-      response.json(profit);
-    });
+    },
+    {
+      $lookup: {
+        from: "orders",
+        localField: "orders",
+        foreignField: "_id",
+        as: "orders",
+      },
+    },
+    {
+      $lookup: {
+        from: "persons",
+        localField: "person",
+        foreignField: "_id",
+        as: "person",
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        email: 1,
+        "person.first_name": 1,
+        "person.surname": 1,
+        orders: {
+          $filter: {
+            input: "$orders",
+            as: "item",
+            cond: {
+              $and: [
+                {
+                  $gt: ["$$item.date_of_game", start_date],
+                },
+                {
+                  $lt: ["$$item.date_of_game", end_date],
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        email: 1,
+        "person.first_name": 1,
+        "person.surname": 1,
+        profit: {
+          $reduce: {
+            input: "$orders",
+            initialValue: 0,
+            in: {
+              $sum: ["$$value", "$$this.payment"],
+            },
+          },
+        },
+      },
+    },
+  ]);
+  usersData = usersData.map(({ email, person, profit }) => ({
+    email,
+    profit,
+    ...person[0],
+  }));
+  console.log(usersData, "usersData");
+  response.json(usersData);
 };
 
 const readUserOrdersByPassport = async (request, response) => {
-  const { passport = "%" } = request.query;
-  console.log(passport, 11111111111);
-  await orders
-    .findAll({
-      attributes: ["date_of_game", "start_time", "end_time", "payment"],
-      include: {
-        model: persons,
-        where: {
-          passport,
-        },
-        attributes: [],
+  const { passport = "" } = request.query;
+  const user = await User.aggregate([
+    {
+      $lookup: {
+        from: "persons",
+        localField: "person",
+        foreignField: "_id",
+        as: "person",
       },
-    })
-    .then((readUsersOrderBy) => {
-      if (!readUsersOrderBy) {
-        return response.status(400).send("readUsersOrderBy. !readUsersOrderBy");
-      }
-      response.json(readUsersOrderBy);
-    });
+    },
+    {
+      $match: {
+        "person.passport": passport,
+      },
+    },
+    {
+      $lookup: {
+        from: "orders",
+        localField: "orders",
+        foreignField: "_id",
+        as: "orders",
+      },
+    },
+    {
+      $unwind: {
+        path: "$orders",
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        date_of_game: "$orders.date_of_game",
+        start_time: "$orders.start_time",
+        end_time: "$orders.end_time",
+        payment: "$orders.payment",
+      },
+    },
+  ]);
+
+  response.json(user || []);
 };
 
-const updateCertainDayScheduleAndSendVouchers = async (request, response) => {
+const updateCertainDaySchedule = async (request, response) => {
   let { day_id, open, close } = request.body;
-
   updateScheduleOfCertainDay(day_id, open, close);
-  //Days' numeration starts from 0 - Monday, 1 - Tuesday ... 6 - Sunday in MySQL
-  //Days' numeration starts from 0 - Sunday, 1 - Monday ... 6 - Saturday in JavaScript Date object (new Date())
-  day_id = day_id === 0 ? 6 : day_id - 1;
-  await users
-    .findAll({
-      raw: true,
-      nest: true,
-      attributes: ["email"],
-      include: {
-        model: orders,
-        attributes: ["date_of_game", "start_time", "end_time", "order_id"],
-        where: {
-          [Op.and]: [
-            where(fn("WEEKDAY", col("date_of_game")), day_id), //literal(`WEEKDAY(date_of_game) = IF(${day_id}=0,6,${day_id - 1})`)
-            where(fn("CURDATE"), "<", col("date_of_game")),
-            {
-              [Op.or]: [
-                where(col("start_time"), "<", open),
-                where(col("start_time"), ">", close),
-              ],
+  console.log(request.body);
+  const dataToProcess = await User.aggregate([
+    {
+      $lookup: {
+        from: "orders",
+        localField: "orders",
+        foreignField: "_id",
+        as: "orders",
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        email: 1,
+        orders: {
+          $map: {
+            input: "$orders",
+            as: "item",
+            in: {
+              _id: "$$item._id",
+              start_time: "$$item.start_time",
+              end_time: "$$item.end_time",
+              date_of_game: "$$item.date_of_game",
+              isoDATE: {
+                $toDate: "$$item.date_of_game",
+              },
+              day_id: {
+                $subtract: [
+                  {
+                    $dayOfWeek: {
+                      $toDate: "$$item.date_of_game",
+                    },
+                  },
+                  1,
+                ],
+              },
             },
-          ],
+          },
         },
       },
-    })
-    .then((updateCertainDayScheduleAndSendVouchers) => {
-      if (!updateCertainDayScheduleAndSendVouchers) {
-        return response
-          .status(400)
-          .send(
-            "updateCertainDayScheduleAndSendVouchers. !updateCertainDayScheduleAndSendVouchers"
-          );
-      }
+    },
+    {
+      $project: {
+        _id: 0,
+        email: 1,
+        orders: {
+          $filter: {
+            input: "$orders",
+            as: "item",
+            cond: {
+              $and: [
+                {
+                  $eq: ["$$item.day_id", day_id],
+                },
+                {
+                  $or: [
+                    {
+                      $lt: ["$$item.start_time", open],
+                    },
+                    {
+                      $gt: ["$$item.start_time", close],
+                    },
+                  ],
+                },
+                {
+                  $gt: ["$$item.isoDATE", new Date()],
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+    {
+      $match: {
+        orders: {
+          $ne: [],
+        },
+      },
+    },
+  ]);
 
-      // services.sendVouchers(updateCertainDayScheduleAndSendVouchers);
-      response.json(updateCertainDayScheduleAndSendVouchers);
-      // orders.destroy({
-      //   where: {
-      //     order_id: updateCertainDayScheduleAndSendVouchers.map(
-      //       ({ orders }) => orders.order_id
-      //     ),
-      //   },
-      // });
-    });
+  if (dataToProcess.length > 0) {
+    const ordersIds = dataToProcess
+      .flatMap(({ orders }) => orders)
+      .map(({ _id }) => _id);
+
+    services.sendVouchers(dataToProcess);
+
+    await Order.deleteMany({ _id: { $in: ordersIds } });
+  }
+
+  response.json({ message: "Day schedule was added successfully" });
 };
 
 const createCertainDateSchedule = async (request, response) => {
   const { date, open, close } = request.body;
   createAlteredWorkSchedule(date, open, close);
-  await users
-    .findAll({
-      raw: true,
-      nest: true,
-      attributes: ["email"],
-      include: {
-        model: orders,
-        attributes: ["date_of_game", "start_time", "end_time", "order_id"],
-        where: {
-          [Op.and]: [
-            { date_of_game: date },
-            open === "-----" && close === "-----"
-              ? undefined
-              : {
-                  [Op.or]: [
-                    where(col("start_time"), "<", open),
-                    where(col("start_time"), ">", close),
+  const dataToProcess = await User.aggregate([
+    {
+      $lookup: {
+        from: "orders",
+        localField: "orders",
+        foreignField: "_id",
+        as: "orders",
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        email: 1,
+        orders: {
+          $filter: {
+            input: "$orders",
+            as: "item",
+            cond: {
+              $and: [
+                {
+                  $eq: ["$$item.date_of_game", date],
+                },
+                {
+                  $or: [
+                    {
+                      $lt: ["$$item.start_time", open],
+                    },
+                    {
+                      $gt: ["$$item.start_time", close],
+                    },
                   ],
                 },
-          ],
+              ],
+            },
+          },
         },
       },
-    })
-    .then((createCertainDateSchedule) => {
-      if (!createCertainDateSchedule) {
-        return response
-          .status(400)
-          .send("createCertainDateSchedule. !createCertainDateSchedule");
-      }
+    },
+    {
+      $match: {
+        orders: {
+          $ne: [],
+        },
+      },
+    },
+  ]);
+  if (dataToProcess.length > 0) {
+    const ordersIds = dataToProcess
+      .flatMap(({ orders }) => orders)
+      .map(({ _id }) => _id);
 
-      services.sendVouchers(createCertainDateSchedule);
-      // orders.destroy({
-      //   where: {
-      //     order_id: createCertainDateSchedule.map(
-      //       ({ orders }) => orders.order_id
-      //     ),
-      //   },
-      // });
-      response.json(createCertainDateSchedule);
-    });
+    services.sendVouchers(dataToProcess);
+
+    await Order.deleteMany({ _id: { $in: ordersIds } });
+  }
+
+  response.json({ message: "Altered schedule was added successfully" });
 };
 
 const adminController = {
@@ -300,7 +470,7 @@ const adminController = {
   readDaysLoad,
   readUsersDataByPayment,
   readUserOrdersByPassport,
-  updateCertainDayScheduleAndSendVouchers,
+  updateCertainDaySchedule,
   createCertainDateSchedule,
 };
 module.exports = adminController;

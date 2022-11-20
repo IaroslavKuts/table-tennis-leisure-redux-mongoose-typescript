@@ -1,7 +1,7 @@
 import { createSelector, createEntityAdapter } from "@reduxjs/toolkit";
 import { apiSlice } from "../../app/api/apiSlice";
 const ordersAdapter = createEntityAdapter({
-  selectId: (order) => order.order_id,
+  selectId: (order) => order._id,
   sortComparer: (a, b) => a.date_of_game - b.date_of_game,
 });
 
@@ -15,7 +15,7 @@ export const ordersApiSlice = apiSlice.injectEndpoints({
         ordersAdapter.setAll(initialState, responseData),
       providesTags: (result, error, arg) => [
         { type: "Orders", id: "LIST" },
-        ...result.ids.map((id) => ({ type: "Orders", id })),
+        ...result.ids.map((_id) => ({ type: "Orders", _id })),
       ],
     }),
     getAllOrders: builder.query({
@@ -24,16 +24,18 @@ export const ordersApiSlice = apiSlice.injectEndpoints({
         ordersAdapter.setAll(initialState, responseData),
       providesTags: (result, error, arg) => [
         { type: "Orders", id: "LIST" },
-        ...result.ids.map((id) => ({ type: "Orders", id })),
+        ...result.ids.map((_id) => ({ type: "Orders", _id })),
       ],
     }),
-    addOrder: builder.mutation({
+    addOrders: builder.mutation({
       query: (order) => ({
-        url: "addOrder",
+        url: process.env.REACT_APP_CREATE_ORDERS,
         method: "POST",
         body: { ...order },
       }),
-      invalidatesTags: [{ type: "Orders", id: "LIST" }],
+      invalidatesTags: (result, error, arg) => {
+        return [{ type: "User", _id: arg._id }];
+      },
     }),
     deleteOrder: builder.mutation({
       query: (order) => ({
@@ -42,7 +44,7 @@ export const ordersApiSlice = apiSlice.injectEndpoints({
         body: { ...order },
       }),
       invalidatesTags: (result, error, arg) => {
-        return [{ type: "Orders", id: arg.order_id }];
+        return [{ type: "User", _id: arg._id }];
       },
     }),
   }),
@@ -52,6 +54,7 @@ export const {
   useGetUserOrdersQuery,
   useGetAllOrdersQuery,
   useDeleteOrderMutation,
+  useAddOrdersMutation,
 } = ordersApiSlice;
 
 export const selectAllOrdersResult =

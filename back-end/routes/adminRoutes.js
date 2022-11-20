@@ -35,7 +35,7 @@ const adminRoutes = (router) => {
   router.post(
     process.env.REACT_APP_UPDATE_CERTAIN_DAY_SCHEDULE_AND_SEND_VOUCHERS,
     csrfDefence,
-    controllers.updateCertainDayScheduleAndSendVouchers
+    controllers.updateCertainDaySchedule
   );
   router.post(
     process.env.REACT_APP_CREATE_CERTAIN_DATE_SCHEDULE,

@@ -1,34 +1,21 @@
-const os = require("os");
-const fs = require("fs");
-// const localConfigPath = "./config.json";
-// let localConfig = require(localConfigPath);
-// console.log(localConfig);
-
-// fs.writeFile(
-//   localConfigPath,
-//   JSON.stringify(localConfig),
-//   "utf-8",
-//   function writeJSON(err) {
-//     if (err) return console.log(err);
-//     console.log(JSON.stringify(localConfig));
-//     console.log("writing to " + localConfigPath);
-//   }
-// );
-
 require("dotenv").config({ path: `.env.${process.env.NODE_ENV}`.trim() });
 const express = require("express");
 const csrf = require("csurf");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const { connectDB } = require("./mongoose_api");
+const mongoose = require("mongoose");
 const app = express();
 const csrfDefence = csrf({ cookie: { httpOnly: true } });
-
+connectDB();
 app.use(express.json());
 app.use(cookieParser());
 
 const whitelist = process.env.WHITELIST.split(" ");
+
 const corsOptions = {
   origin: (origin, callback) => {
+    console.log(origin);
     if (whitelist.indexOf(origin) !== -1 || !origin) {
       callback(null, true);
     } else {
@@ -59,5 +46,7 @@ app.use((error, request, response, next) => {
     .status(error.status || 500)
     .json({ error: { message: error.message } });
 });
-
-app.listen(5000);
+mongoose.connection.once("open", () => {
+  console.log("Connected to mongodb atlas");
+  app.listen(5000);
+});

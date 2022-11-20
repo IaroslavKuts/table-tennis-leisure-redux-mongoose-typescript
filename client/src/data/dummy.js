@@ -86,19 +86,19 @@ export const ColorMappingPrimaryYAxis = {
 
 export const userGrid = [
   {
-    field: "person.first_name",
+    field: "first_name",
     headerText: "First name",
     width: "100",
     textAlign: "Center",
   },
   {
-    field: "person.surname",
+    field: "surname",
     headerText: "Surname",
     width: "100",
     textAlign: "Center",
   },
   {
-    field: "user.email",
+    field: "email",
     headerText: "Email",
     width: "135",
     textAlign: "Center",

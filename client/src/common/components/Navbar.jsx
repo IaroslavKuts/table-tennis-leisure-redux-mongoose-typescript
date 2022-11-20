@@ -83,6 +83,7 @@ const Navbar = () => {
         onClick={() => {
           dispatch(logOut());
           dispatch(apiSlice.util.resetApiState());
+          localStorage.clear();
         }}
         style={{
           backgroundColor: currentColor,
