@@ -46,7 +46,7 @@ const PersonalData = () => {
   });
 
   const filterFields = (data) => {
-    const original = { first_name, surname, passport, date_of_birth, email };
+    const original = { first_name, surname, passport, date_of_birth };
     const result = Object.entries(data).filter(
       ([key, value]) => original[key] !== value
     );
